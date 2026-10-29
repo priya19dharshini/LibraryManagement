@@ -1,17 +1,14 @@
-﻿namespace LibraryManagement.Models;
-public class Book { 
-    public int BookId { get; set; }
-    public string Title { get; set; }
-    public string Author { get; set; }
-    public int TotalCopies { get; set; }
-    public int AvailableCopies { get; set; }
+﻿namespace LibraryManagement.Models {
 
-    public Book(int bookId,string title,string author,int totalCopies)
+    public class Book
     {
-        BookId = bookId;
-        Title = title;
-        Author = author;
-        TotalCopies = totalCopies;
-        AvailableCopies = totalCopies;
+        public int BookId { get; set; }
+        public string Title { get; set; } = string.Empty;
+        public string Author { get; set; } = string.Empty;
+        public string Isbn { get; set; } = string.Empty;
+        public int TotalCopies { get; set; }
+        public int AvailableCopies { get; set; }
+        public ICollection<Loan> Loans { get; set; } = new List<Loan>();
     }
+
 }

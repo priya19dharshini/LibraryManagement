@@ -1,17 +1,11 @@
-﻿public class Member
+﻿namespace LibraryManagement.Models;
+
+public class Member
 {
     public int MemberId { get; set; }
-    public string MemberName { get; set; }
-    public string MembershipType { get; set; }
-    public int BorrowingLimit { get; set; }
-    public decimal OutstandingFine { get; set; }
-
-    public Member(int memberId, string memberName, string membershipType)
-    {
-        MemberId = memberId;
-        MemberName = memberName;
-        MembershipType = membershipType;
-        BorrowingLimit = membershipType == "Standard" ? 3 : 5;
-        OutstandingFine = 0;
-    }
+    public string FullName { get; set; } = string.Empty;
+    public string Email { get; set; } = string.Empty;
+    public string? Phone { get; set; }
+    public bool IsActive { get; set; } = true;
+    public ICollection<Loan> Loans { get; set; } = new List<Loan>();
 }
