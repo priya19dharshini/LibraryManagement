@@ -1,35 +1,39 @@
+
 using LibraryManagement.Models;
 using Microsoft.EntityFrameworkCore;
+
 namespace LibraryManagement.Data;
 
 public class AppDbContext : DbContext
 {
-   
+    // Empty constructor
     public AppDbContext()
     {
     }
 
-    public AppDbContext(DbContextOptions<AppDbContext> options): base(options)
+    // Parameterized constructor
+    public AppDbContext(
+        DbContextOptions<AppDbContext> options)
+        : base(options)
     {
-
     }
 
     public DbSet<Book> Books => Set<Book>();
     public DbSet<Member> Members => Set<Member>();
     public DbSet<Loan> Loans => Set<Loan>();
 
-    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+    protected override void OnConfiguring(
+        DbContextOptionsBuilder optionsBuilder)
     {
         if (!optionsBuilder.IsConfigured)
         {
             optionsBuilder.UseSqlServer(
-            @"Server=.\SQLEXPRESS;Database=LibraryManagementDB;Trusted_Connection=True;Tr
-ustServerCertificate=True;");
+                @"Server=.\SQLEXPRESS;Database=LibraryManagementDB;Trusted_Connection=True;TrustServerCertificate=True;");
         }
     }
 
-
-    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    protected override void OnModelCreating(
+        ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
 
@@ -46,6 +50,10 @@ ustServerCertificate=True;");
             .WithOne(l => l.Book)
             .HasForeignKey(l => l.BookId)
             .IsRequired();
-    }
 
+        // ISBN must be unique
+        modelBuilder.Entity<Book>()
+            .HasIndex(b => b.Isbn)
+            .IsUnique();
+    }
 }
