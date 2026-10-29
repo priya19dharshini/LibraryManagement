@@ -5,12 +5,15 @@ using LibraryManagement.Services;
 
 var bookRepository = new BookRepository();
 var memberRepository = new MemberRepository();
+var loanRepository = new LoanRepository();
 
 var bookService = new BookService(bookRepository);
 var memberService = new MemberService(memberRepository);
+var loanService = new LoanService(loanRepository);
 
 var bookMenu = new BookMenu(bookService);
 var memberMenu = new MemberMenu(memberService);
+var loanMenu = new LoanMenu(loanService);
 
 bool running = true;
 
@@ -19,6 +22,7 @@ while (running)
     Console.WriteLine("\n===== LIBRARY MANAGEMENT SYSTEM =====");
     Console.WriteLine("1. Book Management");
     Console.WriteLine("2. Member Management");
+    Console.WriteLine("3. Loan Management");
     Console.WriteLine("0. Exit");
 
     if (!int.TryParse(
@@ -40,6 +44,9 @@ while (running)
             await memberMenu.RunAsync();
             break;
 
+        case 3:
+            await loanMenu.RunAsync();
+            break;
 
         case 0:
             running = false;
