@@ -4,12 +4,18 @@ using LibraryManagement.Repositories;
 using LibraryManagement.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Configuration;
+
+var configuration = new ConfigurationBuilder()
+    .SetBasePath(AppContext.BaseDirectory)
+    .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+    .Build();
 
 var services = new ServiceCollection();
 
 services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(
-        @"Server=.\SQLEXPRESS;Database=LibraryManagementDB;Trusted_Connection=True;TrustServerCertificate=True;"));
+        configuration.GetConnectionString("DefaultConnection")));
 
 services.AddScoped<BookRepository>();
 services.AddScoped<MemberRepository>();
