@@ -6,10 +6,6 @@ namespace LibraryManagement.Data;
 
 public class AppDbContext : DbContext
 {
-    // Empty constructor
-    public AppDbContext()
-    {
-    }
 
     // Parameterized constructor
     public AppDbContext(
@@ -22,15 +18,6 @@ public class AppDbContext : DbContext
     public DbSet<Member> Members => Set<Member>();
     public DbSet<Loan> Loans => Set<Loan>();
 
-    protected override void OnConfiguring(
-        DbContextOptionsBuilder optionsBuilder)
-    {
-        if (!optionsBuilder.IsConfigured)
-        {
-            optionsBuilder.UseSqlServer(
-                @"Server=.\SQLEXPRESS;Database=LibraryManagementDB;Trusted_Connection=True;TrustServerCertificate=True;");
-        }
-    }
 
     protected override void OnModelCreating(
         ModelBuilder modelBuilder)

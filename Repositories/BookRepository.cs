@@ -8,15 +8,22 @@ namespace LibraryManagement.Repositories;
 
 public class BookRepository
 {
+
+    private readonly AppDbContext _db;
+
+    public BookRepository(AppDbContext db)
+    {
+        _db = db;
+    }
+
     public async Task<int> AddAsync(Book book)
     {
-        await using var db = new AppDbContext();
-
-        db.Books.Add(book);
+       
+        _db.Books.Add(book);
 
         try
         {
-            await db.SaveChangesAsync();
+            await _db.SaveChangesAsync();
             return book.BookId;
         }
         catch (DbUpdateException ex)
@@ -30,9 +37,8 @@ public class BookRepository
 
     public async Task<List<Book>> GetAllAsync()
     {
-        await using var db = new AppDbContext();
-
-        return await db.Books
+       
+        return await _db.Books
             .AsNoTracking()
             .OrderBy(b => b.BookId)
             .ToListAsync();
@@ -40,18 +46,16 @@ public class BookRepository
 
     public async Task<Book?> GetByIdAsync(int id)
     {
-        await using var db = new AppDbContext();
 
-        return await db.Books
+        return await _db.Books
             .AsNoTracking()
             .FirstOrDefaultAsync(b => b.BookId == id);
     }
 
     public async Task<bool> UpdateAsync(int id, Book updatedBook)
     {
-        await using var db = new AppDbContext();
-
-        var book = await db.Books.FindAsync(id);
+       
+        var book = await _db.Books.FindAsync(id);
 
         if (book == null)
             return false;
@@ -73,7 +77,7 @@ public class BookRepository
 
         try
         {
-            await db.SaveChangesAsync();
+            await _db.SaveChangesAsync();
             return true;
         }
         catch (DbUpdateException ex)
@@ -87,14 +91,13 @@ public class BookRepository
 
     public async Task<bool> DeleteAsync(int id)
     {
-        await using var db = new AppDbContext();
-
-        var book = await db.Books.FindAsync(id);
+       
+        var book = await _db.Books.FindAsync(id);
 
         if (book == null)
             return false;
 
-        bool hasLoans = await db.Loans
+        bool hasLoans = await _db.Loans
             .AnyAsync(l => l.BookId == id);
 
         if (hasLoans)
@@ -103,8 +106,8 @@ public class BookRepository
                 "Cannot delete this book because loan records exist.");
         }
 
-        db.Books.Remove(book);
-        await db.SaveChangesAsync();
+        _db.Books.Remove(book);
+        await _db.SaveChangesAsync();
 
         return true;
     }

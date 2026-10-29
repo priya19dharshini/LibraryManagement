@@ -1,20 +1,34 @@
-﻿
+﻿using LibraryManagement.Data;
 using LibraryManagement.Menus;
 using LibraryManagement.Repositories;
 using LibraryManagement.Services;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 
-var bookRepository = new BookRepository();
-var memberRepository = new MemberRepository();
-var loanRepository = new LoanRepository();
+var services = new ServiceCollection();
 
-var bookService = new BookService(bookRepository);
-var memberService = new MemberService(memberRepository);
-var loanService = new LoanService(loanRepository);
+services.AddDbContext<AppDbContext>(options =>
+    options.UseSqlServer(
+        @"Server=.\SQLEXPRESS;Database=LibraryManagementDB;Trusted_Connection=True;TrustServerCertificate=True;"));
 
-var bookMenu = new BookMenu(bookService);
-var memberMenu = new MemberMenu(memberService);
-var loanMenu = new LoanMenu(loanService);
+services.AddScoped<BookRepository>();
+services.AddScoped<MemberRepository>();
+services.AddScoped<LoanRepository>();
 
+services.AddScoped<BookService>();
+services.AddScoped<MemberService>();
+services.AddScoped<LoanService>();
+
+services.AddScoped<BookMenu>();
+services.AddScoped<MemberMenu>();
+services.AddScoped<LoanMenu>();
+
+await using var provider = services.BuildServiceProvider();
+await using var scope = provider.CreateAsyncScope();
+
+var bookMenu = scope.ServiceProvider.GetRequiredService<BookMenu>();
+var memberMenu = scope.ServiceProvider.GetRequiredService<MemberMenu>();
+var loanMenu = scope.ServiceProvider.GetRequiredService<LoanMenu>();
 bool running = true;
 
 while (running)

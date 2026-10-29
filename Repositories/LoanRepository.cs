@@ -7,19 +7,26 @@ namespace LibraryManagement.Repositories;
 
 public class LoanRepository
 {
+    private readonly AppDbContext _db;
+
+    public LoanRepository(AppDbContext db)
+    {
+        _db = db;
+    }
+
     public async Task<int> AddAsync(Loan loan)
     {
-        await using var db = new AppDbContext();
+       
         await using var transaction =
-            await db.Database.BeginTransactionAsync();
+            await _db.Database.BeginTransactionAsync();
 
-        var book = await db.Books
+        var book = await _db.Books
             .FirstOrDefaultAsync(b => b.BookId == loan.BookId);
 
         if (book == null)
             throw new InvalidOperationException("Book not found.");
 
-        var member = await db.Members
+        var member = await _db.Members
             .FirstOrDefaultAsync(m => m.MemberId == loan.MemberId);
 
         if (member == null)
@@ -39,9 +46,9 @@ public class LoanRepository
         loan.Member = member;
         loan.ReturnDate = null;
 
-        db.Loans.Add(loan);
+        _db.Loans.Add(loan);
 
-        await db.SaveChangesAsync();
+        await _db.SaveChangesAsync();
         await transaction.CommitAsync();
 
         return loan.LoanId;
@@ -49,9 +56,8 @@ public class LoanRepository
 
     public async Task<List<Loan>> GetAllAsync()
     {
-        await using var db = new AppDbContext();
 
-        return await db.Loans
+        return await _db.Loans
             .AsNoTracking()
             .Include(l => l.Book)
             .Include(l => l.Member)
@@ -61,9 +67,8 @@ public class LoanRepository
 
     public async Task<Loan?> GetByIdAsync(int id)
     {
-        await using var db = new AppDbContext();
-
-        return await db.Loans
+       
+        return await _db.Loans
             .AsNoTracking()
             .Include(l => l.Book)
             .Include(l => l.Member)
@@ -72,11 +77,10 @@ public class LoanRepository
 
     public async Task<bool> ReturnAsync(int id)
     {
-        await using var db = new AppDbContext();
         await using var transaction =
-            await db.Database.BeginTransactionAsync();
+            await _db.Database.BeginTransactionAsync();
 
-        var loan = await db.Loans
+        var loan = await _db.Loans
             .Include(l => l.Book)
             .FirstOrDefaultAsync(l => l.LoanId == id);
 
@@ -98,7 +102,7 @@ public class LoanRepository
         loan.ReturnDate = DateTime.Now;
         loan.Book.AvailableCopies++;
 
-        await db.SaveChangesAsync();
+        await _db.SaveChangesAsync();
         await transaction.CommitAsync();
 
         return true;

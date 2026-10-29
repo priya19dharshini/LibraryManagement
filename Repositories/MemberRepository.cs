@@ -7,21 +7,27 @@ namespace LibraryManagement.Repositories;
 
 public class MemberRepository
 {
+
+    private readonly AppDbContext _db;
+
+    public MemberRepository(AppDbContext db)
+    {
+        _db = db;
+    }
+
     public async Task<int> AddAsync(Member member)
     {
-        await using var db = new AppDbContext();
-
-        db.Members.Add(member);
-        await db.SaveChangesAsync();
+       
+        _db.Members.Add(member);
+        await _db.SaveChangesAsync();
 
         return member.MemberId;
     }
 
     public async Task<List<Member>> GetAllAsync()
     {
-        await using var db = new AppDbContext();
-
-        return await db.Members
+       
+        return await _db.Members
             .AsNoTracking()
             .OrderBy(m => m.MemberId)
             .ToListAsync();
@@ -29,9 +35,8 @@ public class MemberRepository
 
     public async Task<Member?> GetByIdAsync(int id)
     {
-        await using var db = new AppDbContext();
-
-        return await db.Members
+       
+        return await _db.Members
             .AsNoTracking()
             .FirstOrDefaultAsync(m => m.MemberId == id);
     }
@@ -39,9 +44,8 @@ public class MemberRepository
     public async Task<bool> UpdateAsync(
         int id, Member updatedMember)
     {
-        await using var db = new AppDbContext();
 
-        var member = await db.Members.FindAsync(id);
+        var member = await _db.Members.FindAsync(id);
 
         if (member == null)
             return false;
@@ -51,20 +55,19 @@ public class MemberRepository
         member.Phone = updatedMember.Phone;
         member.IsActive = updatedMember.IsActive;
 
-        await db.SaveChangesAsync();
+        await _db.SaveChangesAsync();
         return true;
     }
 
     public async Task<bool> DeleteAsync(int id)
     {
-        await using var db = new AppDbContext();
-
-        var member = await db.Members.FindAsync(id);
+       
+        var member = await _db.Members.FindAsync(id);
 
         if (member == null)
             return false;
 
-        bool hasLoans = await db.Loans
+        bool hasLoans = await _db.Loans
             .AnyAsync(l => l.MemberId == id);
 
         if (hasLoans)
@@ -73,8 +76,9 @@ public class MemberRepository
                 "Cannot delete a member with existing loan records.");
         }
 
-        db.Members.Remove(member);
-        await db.SaveChangesAsync();
+        
+        _db.Members.Remove(member);
+        await _db.SaveChangesAsync();
 
         return true;
     }
