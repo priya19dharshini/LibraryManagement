@@ -7,12 +7,18 @@ namespace LibraryManagement.Services;
 public class LoanService
 {
     private readonly LoanRepository _repository;
+    private readonly AuditLogService _auditLogService;
 
-    public LoanService(LoanRepository repository)
+    // Constructor Injection
+    public LoanService(
+        LoanRepository repository,
+        AuditLogService auditLogService)
     {
         _repository = repository;
+        _auditLogService = auditLogService;
     }
 
+    // Add Loan
     public async Task<int> AddAsync(Loan loan)
     {
         ArgumentNullException.ThrowIfNull(loan);
@@ -31,26 +37,51 @@ public class LoanService
 
         loan.ReturnDate = null;
 
-        return await _repository.AddAsync(loan);
+        int loanId = await _repository.AddAsync(loan);
+
+        await _auditLogService.LogAsync(
+            "INSERT",
+            "Loan",
+            loanId,
+            "New loan created successfully");
+
+        return loanId;
     }
 
+    // Get All Loans
     public Task<List<Loan>> GetAllAsync()
     {
         return _repository.GetAllAsync();
     }
 
+    // Get Loan By ID
     public async Task<Loan?> GetByIdAsync(int id)
     {
         ValidateId(id);
+
         return await _repository.GetByIdAsync(id);
     }
 
+    // Return Book
     public async Task<bool> ReturnAsync(int id)
     {
         ValidateId(id);
-        return await _repository.ReturnAsync(id);
+
+        bool result = await _repository.ReturnAsync(id);
+
+        if (result)
+        {
+            await _auditLogService.LogAsync(
+                "UPDATE",
+                "Loan",
+                id,
+                "Book returned successfully");
+        }
+
+        return result;
     }
 
+    // Validate Loan ID
     private static void ValidateId(int id)
     {
         if (id <= 0)

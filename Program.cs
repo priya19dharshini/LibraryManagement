@@ -1,72 +1,127 @@
-﻿using LibraryManagement.Data;
+﻿
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+
+using LibraryManagement.Data;
+using LibraryManagement.Helper;
 using LibraryManagement.Menus;
 using LibraryManagement.Repositories;
 using LibraryManagement.Services;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Configuration;
 
-var configuration = new ConfigurationBuilder()
-    .SetBasePath(AppContext.BaseDirectory)
-    .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
-    .Build();
 
-var services = new ServiceCollection();
+// 1. Create Host Builder
+var builder = Host.CreateApplicationBuilder(args);
 
-services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlServer(
-        configuration.GetConnectionString("DefaultConnection")));
+// 2. Get Connection String
+var connectionString =
+    builder.Configuration.GetConnectionString("DefaultConnection");
 
-services.AddScoped<BookRepository>();
-services.AddScoped<MemberRepository>();
-services.AddScoped<LoanRepository>();
+// 3. Validate Connection String
+if (string.IsNullOrWhiteSpace(connectionString))
+{
+    throw new InvalidOperationException(
+        "DefaultConnection is missing from appsettings.json");
+}
 
-services.AddScoped<BookService>();
-services.AddScoped<MemberService>();
-services.AddScoped<LoanService>();
+// 4. Register Database Context
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseSqlServer(connectionString));
 
-services.AddScoped<BookMenu>();
-services.AddScoped<MemberMenu>();
-services.AddScoped<LoanMenu>();
+Console.WriteLine("Connection string loaded successfully!");
 
-await using var provider = services.BuildServiceProvider();
-await using var scope = provider.CreateAsyncScope();
 
-var bookMenu = scope.ServiceProvider.GetRequiredService<BookMenu>();
-var memberMenu = scope.ServiceProvider.GetRequiredService<MemberMenu>();
-var loanMenu = scope.ServiceProvider.GetRequiredService<LoanMenu>();
+// 4. Register Repositories
+builder.Services.AddScoped<BookRepository>();
+builder.Services.AddScoped<MemberRepository>();
+builder.Services.AddScoped<LoanRepository>();
+builder.Services.AddScoped<AuditLogRepository>();
+
+// 5. Register Services
+builder.Services.AddScoped<BookService>();
+builder.Services.AddScoped<MemberService>();
+builder.Services.AddScoped<LoanService>();
+builder.Services.AddScoped<AuditLogService>();
+
+// 6. Register Menus
+builder.Services.AddScoped<BookMenu>();
+builder.Services.AddScoped<MemberMenu>();
+builder.Services.AddScoped<LoanMenu>();
+
+// 7. Build Host
+using var host = builder.Build();
+
+// 8. Start Host
+await host.StartAsync();
+
 bool running = true;
-
 while (running)
 {
     Console.WriteLine("\n===== LIBRARY MANAGEMENT SYSTEM =====");
     Console.WriteLine("1. Book Management");
     Console.WriteLine("2. Member Management");
     Console.WriteLine("3. Loan Management");
+    Console.WriteLine("4. View Audit Logs");
     Console.WriteLine("0. Exit");
 
     if (!int.TryParse(
-        LibraryManagement.Helper.InputHelper
-            .ReadRequiredInput("Enter choice: "),
+        InputHelper.ReadRequiredInput("Enter choice: "),
         out int choice))
     {
         Console.WriteLine("Invalid input. Enter a number.");
         continue;
     }
 
+    // CREATE A NEW SCOPE FOR EACH ITERATION
+    // This ensures AppDbContext and repositories are freshly created and disposed properly after each action
+    using var scope = host.Services.CreateScope();
+    var services = scope.ServiceProvider;
+
+    var auditLogService =
+    scope.ServiceProvider.GetRequiredService<AuditLogService>();
+
     switch (choice)
     {
         case 1:
+            var bookMenu = services.GetRequiredService<BookMenu>();
             await bookMenu.RunAsync();
             break;
 
         case 2:
+            var memberMenu = services.GetRequiredService<MemberMenu>();
             await memberMenu.RunAsync();
             break;
 
         case 3:
+            var loanMenu = services.GetRequiredService<LoanMenu>();
             await loanMenu.RunAsync();
             break;
+
+        case 4:
+            var auditLogs = await auditLogService.GetAllLogsAsync();
+
+            Console.WriteLine("\n===== AUDIT LOGS =====");
+
+            foreach (var log in auditLogs)
+            {
+                Console.WriteLine($"Audit ID    : {log.AuditLogId}");
+                Console.WriteLine($"Action      : {log.Action}");
+                Console.WriteLine($"Entity      : {log.EntityName}");
+                Console.WriteLine($"Entity ID   : {log.EntityId}");
+                Console.WriteLine($"Description : {log.Description}");
+                Console.WriteLine($"Performed By: {log.PerformedBy}");
+                Console.WriteLine($"Date        : {log.PerformedAt}");
+                Console.WriteLine("--------------------------------");
+            }
+
+            if (auditLogs.Count == 0)
+            {
+                Console.WriteLine("No audit logs found.");
+            }
+
+            break;
+
 
         case 0:
             running = false;
@@ -78,3 +133,6 @@ while (running)
             break;
     }
 }
+
+// Stop host gracefully on exit
+await host.StopAsync();
